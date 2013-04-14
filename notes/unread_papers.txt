@@ -1,0 +1,14 @@
+Unread Papers
+
+Instrument Identification in Polyphonic Music
+http://tinyurl.com/d5cyled
+
+Emotion Detection
+(skimmed it) http://www.cslu.ogi.edu/~zak/is-icassp05.pdf
+
+Transforming Emotion
+http://mi.eng.cam.ac.uk/~sjy/papers/inyo07.pdf
+http://www.dfki.de/~schroed/articles/turk_schroeder2008.pdf
+
+Voice transfomation
+http://www.cstr.ed.ac.uk/research/projects/voicetransformation/

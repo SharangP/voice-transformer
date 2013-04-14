@@ -1,0 +1,14 @@
+Speech Databases & Resources
+
+People saying same shit
+http://alt-usage-english.org/audio_archive.shtml#Arthur
+http://accent.gmu.edu/
+
+CMU ARCTIC Databases (English single speaker databases designed for unit selection speech synthesis research)
+http://www.festvox.org/cmu_arctic/
+
+CMU AUDIO Databases (general)
+http://www.speech.cs.cmu.edu/databases/pda/
+
+TSP Speech (Jason & David are using this)
+on my ice machine

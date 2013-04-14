@@ -1,0 +1,28 @@
+NOTES
+
+GMM-Based Speech Transformation Systems under Data Reduction
+http://www.isca-speech.org/archive_open/archive_papers/ssw6/ssw6_119.pdf
+    --Used GMM's on source and target. Compared similarities and what not? <-- weird
+    --have different learning algorithms
+    --How:
+        MFCC vectors computing (sampling frequency is 16 Khz, a 30 ms Hamming window is applied, the analyzing step is 10ms). The order of the MFCC vector is set to 13 (including energy) except for the toda transformation, where a vector is of dimension 26 (MFCC with their deltas)
+        Dynamic time warping between the source and target sequences using an euclidian norm on the MFCC vectors.
+        Parameter estimation of the GMM models (means, covariances and weights). GMM models with 8, 32 and 64 components have been calculated. covariance matrices are full or diagonal.
+
+Learning musical instruments from mixtures of audio with weak labels
+http://www.academia.edu/252891/Learning_musical_instruments_from_mixtures_of_audio_with_weak_labels
+    --Skimmed it...
+    --Main take-away: FEATURES - Table 1:
+        MFCCs
+        Brightness - Ratio of energy above 1500Hz to energy below
+        Spectral Stats - First four statistical moments of spectrum
+        Flatness - Ratio of geometric to arithmetic mean of spectrum
+        Pitch - Calculated using ﬁrst peak of autocorrelation function
+        Amplitude - RMS
+        Flux - Difference of spectrum between subsequent frames
+        Inharmonicity - The strength of the pitch: amount of energy far from f0·n
+
+Emotion Detection from Speech
+http://cs229.stanford.edu/proj2007/ShahHewlett%20-%20Emotion%20Detection%20from%20Speech.pdf
+
+
