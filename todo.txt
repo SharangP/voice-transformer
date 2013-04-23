@@ -5,3 +5,4 @@ TO DO
 - try clustering to see how speakers separate
 - try a basic speaker identification system
 - what features need to change?
+- Use PRAAT (Phonation Analysis)

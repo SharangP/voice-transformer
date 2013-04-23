@@ -1,0 +1,104 @@
+#select all
+#Remove
+
+#  Load file lists from the two user-inputted directories and sort them in numerical order.
+
+form Directories
+endform
+
+directory$ = "'input1$'"
+directory2$ = "'input2$'"
+
+Create Strings as file list... list 'directory$'\*.wav
+numberOfFiles = Get number of strings
+select Strings list
+Sort
+Create Strings as file list... list2 'directory2$'\*.wav
+numberOfFiles2 = Get number of strings
+select Strings list2
+Sort
+
+#  This loop uses the voice transformation algorithm on corresponding "chunks" of each speaker's signal.
+
+for ifile to numberOfFiles
+   select Strings list
+   fileName$ = Get string... ifile
+   select Strings list2
+   fileName2$ = Get string... ifile
+   Read from file... 'directory$'\'fileName$'
+   Rename... sound1
+   Read from file... 'directory2$'\'fileName2$'
+   Rename... sound2
+
+#  Resample "chunk" from source speaker's signal at 11kHz.  Calculate the LPC filter and inverse filter it with the original "chunk" to obtain the excitation component.
+
+select Sound sound1
+Resample... 11000 50
+Rename... sound1_11000
+To LPC (burg)... 10 0.025 0.005 50
+Rename... sound1_LPC
+select Sound sound1_11000
+plus LPC sound1_LPC
+Filter (inverse)
+Rename... excitation1
+
+#  Resample "chunk" from target speaker's signal at 11 kHz.  Calculate the LPC filter.
+
+select Sound sound2
+Resample... 11000 50
+Rename... sound2_11000
+To LPC (burg)... 10 0.025 0.005 50
+Rename... sound2_LPC
+
+#  Filter the source speaker's excitation component with the target speaker's LPC filter.
+
+select Sound excitation1
+plus LPC sound2_LPC
+Filter... no
+Rename... filtered
+
+#  Convert target speaker's "chunk" into a Manipulation object.  Extract the pitch information from the target speaker's signal.
+
+select Sound sound2
+To Manipulation... 0.01 75 600
+Rename... sound2_manip
+select Manipulation sound2_manip
+Extract pitch tier
+Rename... sound2_pitch
+
+#  Convert source speaker's "chunk" into a Manipulation object.  Replace the source speaker's pitch information with the target speaker's information.
+
+select Sound filtered
+To Manipulation... 0.01 75 600
+Rename... sound1_manip
+select Manipulation sound1_manip
+plus PitchTier sound2_pitch
+Replace pitch tier
+
+#  Resynthesize the sound file from the source speaker's Manipulation object.
+
+select Manipulation sound1_manip
+Get resynthesis (LPC)
+Rename... result
+
+#  Rename the sound file so it doesn't get overwritten in subsequent iterations of the loop.
+
+select Sound result
+Rename... 'ifile'
+
+endfor
+
+#  Combine the processed "chunks" into the original phrase.
+
+select Sound 1
+
+for x to numberOfFiles
+plus Sound 'x'
+endfor
+
+Concatenate
+
+#  Play the result.
+
+select Sound chain
+Play

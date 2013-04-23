@@ -26,7 +26,16 @@ winTime = 0.01;
 framedSig1M = buffer(signal1M,winTime*fs);
 framedSig1F = buffer(signal1F,winTime*fs);
 
-ds = prtDataSetClass(framedSig1M',ones(size(framedSig1M,2),1));
+rmsA1M = rms(framedSig1M')';
+muA1M = mean(rmsA1M);
+varA1M = std(rmsA1M);
+normA1M = [];
+
+rmsA1F = rms(framedSig1F')';
+muA1F = mean(rmsA1F);
+varA1F = std(rmsA1F);
+normA1F = [];
+
 
 freqs1M = real(fft(framedSig1M));
 freqs1F = real(fft(framedSig1F));
