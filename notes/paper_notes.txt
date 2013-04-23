@@ -25,4 +25,6 @@ http://www.academia.edu/252891/Learning_musical_instruments_from_mixtures_of_aud
 Emotion Detection from Speech
 http://cs229.stanford.edu/proj2007/ShahHewlett%20-%20Emotion%20Detection%20from%20Speech.pdf
 
-
+Voice transfomation
+http://www.cstr.ed.ac.uk/research/projects/voicetransformation/
+    "All existing voice transformation systems simply normalise the mean and standard deviation of the fundamental frequency to be that of the target speakers."

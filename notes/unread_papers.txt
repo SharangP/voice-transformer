@@ -10,5 +10,3 @@ Transforming Emotion
 http://mi.eng.cam.ac.uk/~sjy/papers/inyo07.pdf
 http://www.dfki.de/~schroed/articles/turk_schroeder2008.pdf
 
-Voice transfomation
-http://www.cstr.ed.ac.uk/research/projects/voicetransformation/
