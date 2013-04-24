@@ -20,13 +20,11 @@ FAsoundFiles = dir(strcat(TSPpath, 'FA/*.wav'));
 
 nFFT = 512;
 winTime = 0.01;
-% soundsc(signal1M,fs);
+soundsc(signal1M,fs);
 % mfcc1 = melfcc(signal1M,fs,'wintime',winTime,'hoptime',winTime);
 % x = invmelfcc(mfcc1,fs,'wintime',winTime,'hoptime',winTime);
 framedSig1M = buffer(signal1M,winTime*fs);
 framedSig1F = buffer(signal1F,winTime*fs);
-
-ds = prtDataSetClass(framedSig1M',ones(size(framedSig1M,2),1));
 
 freqs1M = real(fft(framedSig1M));
 freqs1F = real(fft(framedSig1F));
@@ -43,4 +41,4 @@ freqs1FtoM = bsxfun(@plus, bsxfun(@times, freqs1FN, var1M), mu1M);
 
 x = ifft(freqs1FtoM);
 x = reshape(smooth(real(x)),1,numel(x));
-% soundsc(x,fs);
+soundsc(x,fs);
