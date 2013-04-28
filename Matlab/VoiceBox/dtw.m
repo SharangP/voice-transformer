@@ -1,5 +1,6 @@
 function [Dist,D,k,w]=dtw(t,r)
 %Dynamic Time Warping Algorithm
+%[Dist,D,k,w]=dtw(t,r)
 %Dist is unnormalized distance between t and r
 %D is the accumulated distance matrix
 %k is the normalizing factor

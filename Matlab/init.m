@@ -5,3 +5,4 @@
 % Initialization Script
 
 addpath(genpath('.'))
+prtPath('alpha','beta')

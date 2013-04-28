@@ -3,7 +3,7 @@
 % Sameer Chocotaco
 % 
 % Looking at things
-
+clear all;close all;
 TSPpath = '../../TSPspeech/48k/';
 
 MAsoundFiles = dir(strcat(TSPpath, 'MA/*.wav'));
@@ -12,37 +12,93 @@ FAsoundFiles = dir(strcat(TSPpath, 'FA/*.wav'));
 [signal1M, fs] = wavread(strcat(TSPpath,'MA/', MAsoundFiles(1).name));
 [signal1F, ~] = wavread(strcat(TSPpath,'FA/', FAsoundFiles(1).name));
 
-% figure(1)
-% subplot(211);
-% spectrogram(signal1M, triang(512), 0, 512, fs, 'yaxis');
-% subplot(212);
-% spectrogram(signal1F, triang(512), 0, 512, fs, 'yaxis');
-
-nFFT = 512;
+nFFT = 128;
 winTime = 0.01;
-% soundsc(signal1M,fs);
-% mfcc1 = melfcc(signal1M,fs,'wintime',winTime,'hoptime',winTime);
-% x = invmelfcc(mfcc1,fs,'wintime',winTime,'hoptime',winTime);
-framedSig1M = buffer(signal1M,winTime*fs);
-framedSig1F = buffer(signal1F,winTime*fs);
+freqs1M = abs(spectrogram(signal1M,winTime*fs,winTime*fs/2,nFFT,fs));
+freqs1F = abs(spectrogram(signal1F,winTime*fs,winTime*fs/2,nFFT,fs));
 
-freqs1M = real(fft(framedSig1M));
-freqs1F = real(fft(framedSig1F));
+% %% DTF 
+% %  
+% spec1M = spectrogram(signal1M,512,384,512,fs);
+% spec1F = spectrogram(signal1F,512,384,512,fs);
 % 
-% mu1M = mean(freqs1M,2);
-% var1M = std(freqs1M,[],2);
-% mu1F = mean(freqs1F,2);
-% var1F = std(freqs1F,[],2);
+% %% Dynamic Time warping
+% 
+% %Construct the 'local match' scores matrix as the cosine distance 
+% % between the STFT magnitudes
+% stfMag = simmx(abs(spec1M), abs(spec1F));
+% 
+% % Use dynamic programming to find the lowest-cost path between the 
+% % opposite corners of the cost matrix
+% % Note that we use 1-SM because dp will find the *lowest* total cost
+% [p,q,C] = dp2(1-stfMag);
+% 
+% % Calculate the frames in spec1F that are indicated to match each frame
+% % in spec1M, so we can resynthesize a warped, aligned version
+% female1 = zeros(1, size(spec1M,2));
+% for i = 1:length(female1); female1(i) = q(find(p >= i, 1 )); end
+% % Phase-vocoder interpolate D2's STFT under the time warp
+% femaleInterp = pvsample(spec1F, female1-1, 128);
+% % Invert it back to time domain
+% femaleWarp = istft(femaleInterp, 512, 512, 128)';
+% % femaleWarp = padarray(femaleWarp,length(signal1M)-length(femaleWarp),'post');
+% 
+% % soundsc(femaleWarp,fs);
+%% Fit GMMs to Sourcea and Target Spectra
 
+gmmSource = cell(size(freqs1F,1),1);
+gmmTarget = cell(size(freqs1M,1),1);
+gmmJoint = cell(size(freqs1M,1),1);
 
-gmm1M = prtRvGmm('nComponents',3);
-gmm1M = repmat(gmm1M, size(freqs1M,1));
-ds = zeros(1,size(freqs1M,1));
-for i = 1:size(freqs1M,1)
-    ds(i) = prtDataSetClass(freqs1M(i,:)');
-    gmm1M(i).mle(ds(i));
+for n = 1:size(freqs1F,1)
+    nCluster = 5;
+    gmmSource{n} = gmdistribution.fit(freqs1F(n,:)',nCluster);
+    while (gmmSource{n}.Converged ~=  1) && (nCluster > 1)
+        nCluster = nCluster - 1;
+        gmmSource{n} = gmdistribution.fit(freqs1F(n,:)',nCluster);
+    end
+    gmmTarget{n} = gmdistribution.fit(freqs1M(n,:)',nCluster);
+    gmmJoint{n} = gmdistribution.fit([freqs1F(n,:)';freqs1M(n,:)'],nCluster);
 end
 
+%% Apply the Transformation Function
+
+freqsTransformed = zeros(size(freqs1F));
+
+for n = 1:size(freqs1F,1)    
+    muX = gmmSource{n}.mu;
+    sigmaX = gmmSource{n}.Sigma;
+    sigmaX = reshape(sigmaX,numel(sigmaX),1);
+    
+    muY = gmmTarget{n}.mu;
+    sigmaY = gmmTarget{n}.Sigma;
+    sigmaY = reshape(sigmaY,numel(sigmaY),1);
+        
+    sigmaXY = gmmJoint{n}.Sigma;
+    sigmaXY = reshape(sigmaXY,numel(sigmaXY),1);
+    
+    for m = 1:size(freqs1F,2)
+        h = gmmSource{n}.posterior(freqs1F(n,m))';
+        freqsTransformed(n,m) = sum(h.*(muY + sigmaXY.*(sigmaX.^-1).*(freqs1F(n,m) - muX)));
+    end
+end
+
+ xFormed = istft(freqsTransformed, nFFT, winTime*fs,  winTime*fs/2)'
+
+%% FURKKKK
+% 
+% gmm1M = prtRvMvn;
+% gmm1M = repmat(gmm1M, size(freqs1M,1),1);
+% ds = repmat(prtDataSetClass,size(freqs1M,1),1);
+% masterMDS = prtDataSetClass(freqs1M');
+% masterMVN = prtRvGmm('nComponents',3);
+% masterMVN.train(masterMDS);
+% 
+% for n = 1:size(freqs1M,1)
+%     n
+%     ds(n) = prtDataSetClass(freqs1M(n,:)');
+%     gmm1M(n).mle(ds(n));
+% end
 
 
 % 
@@ -53,3 +109,682 @@ end
 % x = reshape(smooth(real(x)),1,numel(x));
 % soundsc(x,fs);
 % soundsc(reshape(ifft(freqs1M),1,numel(framedSig1M)),fs);
+%
+%
+%
+%
+%
+
+%
+%
+
+%
+%
+%
+
+%
+%
+%
+%
+
+%
+%
+
+%
+%
+
+%
+%
+%
+
+%
+%
+%
+
+%
+
+%
+%
+%
+%
+
+%
+%
+%
+
+%
+%
+
+%
+
+
+%
+%
+%
+
+%
+%
+
+%
+%
+
+%
+%
+
+%
+%
+%
+%
+
+%
+%
+
+%
+
+%
+%
+%
+%
+
+%
+%
+%
+
+%
+%
+
+%
+
+
+%
+%
+%
+
+%
+%
+
+%
+%
+
+%
+%
+%
+%
+
+%
+
+%
+%
+%
+%
+
+%
+%
+%
+
+%
+%
+
+%
+
+
+%
+%
+%
+
+%
+%
+
+%
+%
+
+%
+%
+%
+%
+
+%
+
+%
+%
+%
+%
+
+%
+%
+%
+
+%
+%
+
+%
+
+
+%
+%
+%
+
+%
+%
+
+%
+%
+
+%
+%
+%
+%
+
+%
+
+%
+%
+%
+%
+
+%
+%
+%
+
+%
+%
+
+%
+
+
+%
+%
+%
+
+%
+%
+
+%
+%
+
+%
+%
+%
+%
+
+%
+
+%
+%
+%
+%
+
+%
+%
+%
+
+%
+%
+
+%
+
+
+%
+%
+%
+
+%
+%
+
+%
+%
+
+%
+%
+%
+%
+
+%
+
+%
+%
+%
+%
+
+%
+%
+%
+
+%
+%
+
+%
+
+
+%
+%
+%
+
+%
+%
+
+%
+%
+
+%
+%
+%
+%
+
+%
+
+%
+%
+%
+%
+
+%
+%
+%
+
+%
+%
+
+%
+
+
+%
+%
+%
+
+%
+%
+
+%
+%
+
+%
+%
+%
+%
+
+%
+
+%
+%
+%
+%
+
+%
+%
+%
+
+%
+%
+
+%
+
+
+%
+%
+%
+
+%
+%
+
+%
+%
+
+%
+%
+%
+%
+
+%
+
+%
+%
+%
+%
+
+%
+%
+%
+
+%
+%
+
+%
+
+
+%
+%
+%
+
+%
+%
+
+%
+%
+
+%
+%
+%
+%
+
+%
+
+%
+%
+%
+%
+
+%
+%
+%
+
+%
+%
+
+%
+
+
+%
+%
+%
+
+%
+%
+
+%
+%
+
+%
+%
+%
+%
+
+%
+
+%
+%
+%
+%
+
+%
+%
+%
+
+%
+%
+
+%
+
+
+%
+%
+%
+
+%
+%
+
+%
+%
+
+%
+%
+%
+%
+
+%
+
+%
+%
+%
+%
+
+%
+%
+%
+
+%
+%
+
+%
+
+
+%
+%
+%
+
+%
+%
+
+%
+%
+
+%
+%
+%
+%
+
+%
+
+%
+%
+%
+%
+
+%
+%
+%
+
+%
+%
+
+%
+
+
+%
+%
+%
+
+%
+%
+
+%
+%
+
+%
+%
+%
+%
+
+%
+
+%
+%
+%
+%
+
+%
+%
+%
+
+%
+%
+
+%
+
+
+%
+%
+%
+
+%
+%
+
+%
+%
+
+%
+%
+%
+%
+
+%
+
+%
+%
+%
+%
+
+%
+%
+%
+
+%
+%
+
+%
+
+
+%
+%
+%
+
+%
+%
+
+%
+%
+
+%
+%
+%
+%
+
+%
+
+%
+%
+%
+%
+
+%
+%
+%
+
+%
+%
+
+%
+
+
+%
+%
+%
+
+%
+%
+
+%
+%
+
+%
+%
+%
+%
+
+%
+
+%
+%
+%
+%
+
+%
+%
+%
+
+%
+%
+
+%
+
+
+%
+%
+%
+
+%
+%
+
+%
+%
+
+%
+%
+
+
+
+
+%
+%
+
+%
+
+%
+%
+%
+%
+
+%
+%
+%
+
+%
+%
+
+%
+
+
+%
+%
+%
+
+%
+%
+
+%
+%
+
+%
+%
+%
+%
+
+%
+
+%
+%
+%
+%
+
+%
+%
+%
+
+%
+%
+
+%
+
+
+%
+%
+%
+
+%
+%
+
+%
+%
+
+% OUR ENTIRE CODE IS COMMENTS
+%
