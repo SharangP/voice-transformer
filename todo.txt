@@ -1,8 +1,5 @@
 TO DO
 
-- look at speech sample spectrograms harmonics?
-- look at setup (labeling, speaker identification, etc)
-- try clustering to see how speakers separate
-- try a basic speaker identification system
-- what features need to change?
+- posteriors may or may not work (internal gmmdistribution fx)
+- istft may not work
 - Use PRAAT (Phonation Analysis)
