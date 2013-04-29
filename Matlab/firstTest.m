@@ -12,10 +12,22 @@ FAsoundFiles = dir(strcat(TSPpath, 'FA/*.wav'));
 [signal1M, fs] = wavread(strcat(TSPpath,'MA/', MAsoundFiles(1).name));
 [signal1F, ~] = wavread(strcat(TSPpath,'FA/', FAsoundFiles(1).name));
 
+sig1M = Signal(strcat(TSPpath,'MA/', MAsoundFiles(1).name));
+sig1F = Signal(strcat(TSPpath,'FA/', FAsoundFiles(1).name));
+
 nFFT = 128;
 winTime = 0.01;
+
+sig1M.nfft = nFFT;
+sig1F.nfft= nFFT;
+sig1M.STFT;
+sig1F.STFT;
+
+
 freqs1M = abs(spectrogram(signal1M,winTime*fs,winTime*fs/2,nFFT,fs));
-freqs1F = abs(spectrogram(signal1F,winTime*fs,winTime*fs/2,nFFT,fs));
+% freqs1F = abs(spectrogram(signal1F,winTime*fs,winTime*fs/2,nFFT,fs));
+freqs1M = abs(sig1M.S);
+freqs1F = abs(sig1F.S);
 
 
 %% Fit GMMs to Sourcea and Target Spectra
@@ -39,7 +51,8 @@ end
 
 freqsTransformed = zeros(size(freqs1F));
 
-for n = 1:size(freqs1F,1)    
+for n = 1:size(freqs1F,1) 
+    n
     muX = gmmSource{n}.mu;
     sigmaX = gmmSource{n}.Sigma;
     sigmaX = reshape(sigmaX,numel(sigmaX),1);
@@ -57,7 +70,13 @@ for n = 1:size(freqs1F,1)
     end
 end
 
-xFormed = istft(freqsTransformed, nFFT, winTime*fs,  winTime*fs/2)';
+xFormSig = sig1F;
+% xFormSig.s = [];
+xFormSig.S = freqsTransformed;
+xFormed = xFormSig.iSTFT();
+
+% xFormed = istft(freqsTransformed, nFFT, winTime*fs,  winTime*fs/2)';
+% xFormed = timeWarp(freqs1M, freqsTransformed, winTime*fs, winTime*fs/2, nFFT);
 
 %% DTF 
 % %  
@@ -65,29 +84,37 @@ xFormed = istft(freqsTransformed, nFFT, winTime*fs,  winTime*fs/2)';
 % spec1F = spectrogram(signal1F,512,384,512,fs);
 
 %% Dynamic Time warping
-
-%Construct the 'local match' scores matrix as the cosine distance 
-% between the STFT magnitudes
-stfMag = simmx(abs(freqs1M), abs(xFormed));
-
-% Use dynamic programming to find the lowest-cost path between the 
-% opposite corners of the cost matrix
-% Note that we use 1-SM because dp will find the *lowest* total cost
-[p,q,C] = dp2(1-stfMag);
-
-% Calculate the frames in spec1F that are indicated to match each frame
-% in spec1M, so we can resynthesize a warped, aligned version
-female1 = zeros(1, size(freqs1M,2));
-for i = 1:length(female1); female1(i) = q(find(p >= i, 1 )); end
-% Phase-vocoder interpolate D2's STFT under the time warp
-femaleInterp = pvsample(xFormed, female1-1, 128);
-% Invert it back to time domain
+% 
+% %Construct the 'local match' scores matrix as the cosine distance 
+% % between the STFT magnitudes
+% stfMag = simmx(abs(freqs1M), abs(xFormed));
+% 
+% % Use dynamic programming to find the lowest-cost path between the 
+% % opposite corners of the cost matrix
+% % Note that we use 1-SM because dp will find the *lowest* total cost
+% [p,q,C] = dp2(1-stfMag);
+% 
+% % Calculate the frames in spec1F that are indicated to match each frame
+% % in spec1M, so we can resynthesize a warped, aligned version
+% female1 = zeros(1, size = prtDataSetClass(freqs1M');
+% % masterMVN = prtRvGmm('nComponents',3);
+% % masterMVN.train(masterMDS);
+% % 
+% % for n = 1:size(freqs1M,1)
+% %     n
+% %     ds(n) = prtDataSetClass(freqs1M(n,:)');
+% %     gmm1M(n).mle(ds(n));
+% % end(freqs1M,2));
+% for i = 1:length(female1); female1(i) = q(find(p >= i, 1 )); end
+% % Phase-vocoder interpolate D2's STFT under the time warp
+% femaleInterp = pvsample(xFormed, female1-1, 128);
+% % Invert it back to time domain
+% % femaleWarp = istft(femaleInterp, 512, 512, 128)';
 % femaleWarp = istft(femaleInterp, 512, 512, 128)';
-femaleWarp = istft(femaleInterp, 512, 512, 128)';
-% femaleWarp = padarray(femaleWarp,length(signal1M)-length(femaleWarp),'post');
-
-soundsc(femaleWarp,fs);
-
+% % femaleWarp = padarray(femaleWarp,length(signal1M)-length(femaleWarp),'post');
+% 
+% soundsc(femaleWarp,fs);
+% 
 
 
 
