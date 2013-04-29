@@ -17,33 +17,7 @@ winTime = 0.01;
 freqs1M = abs(spectrogram(signal1M,winTime*fs,winTime*fs/2,nFFT,fs));
 freqs1F = abs(spectrogram(signal1F,winTime*fs,winTime*fs/2,nFFT,fs));
 
-% %% DTF 
-% %  
-% spec1M = spectrogram(signal1M,512,384,512,fs);
-% spec1F = spectrogram(signal1F,512,384,512,fs);
-% 
-% %% Dynamic Time warping
-% 
-% %Construct the 'local match' scores matrix as the cosine distance 
-% % between the STFT magnitudes
-% stfMag = simmx(abs(spec1M), abs(spec1F));
-% 
-% % Use dynamic programming to find the lowest-cost path between the 
-% % opposite corners of the cost matrix
-% % Note that we use 1-SM because dp will find the *lowest* total cost
-% [p,q,C] = dp2(1-stfMag);
-% 
-% % Calculate the frames in spec1F that are indicated to match each frame
-% % in spec1M, so we can resynthesize a warped, aligned version
-% female1 = zeros(1, size(spec1M,2));
-% for i = 1:length(female1); female1(i) = q(find(p >= i, 1 )); end
-% % Phase-vocoder interpolate D2's STFT under the time warp
-% femaleInterp = pvsample(spec1F, female1-1, 128);
-% % Invert it back to time domain
-% femaleWarp = istft(femaleInterp, 512, 512, 128)';
-% % femaleWarp = padarray(femaleWarp,length(signal1M)-length(femaleWarp),'post');
-% 
-% % soundsc(femaleWarp,fs);
+
 %% Fit GMMs to Sourcea and Target Spectra
 
 gmmSource = cell(size(freqs1F,1),1);
@@ -83,7 +57,39 @@ for n = 1:size(freqs1F,1)
     end
 end
 
- xFormed = istft(freqsTransformed, nFFT, winTime*fs,  winTime*fs/2)'
+xFormed = istft(freqsTransformed, nFFT, winTime*fs,  winTime*fs/2)';
+
+%% DTF 
+% %  
+% spec1M = spectrogram(signal1M,512,384,512,fs);
+% spec1F = spectrogram(signal1F,512,384,512,fs);
+
+%% Dynamic Time warping
+
+%Construct the 'local match' scores matrix as the cosine distance 
+% between the STFT magnitudes
+stfMag = simmx(abs(freqs1M), abs(xFormed));
+
+% Use dynamic programming to find the lowest-cost path between the 
+% opposite corners of the cost matrix
+% Note that we use 1-SM because dp will find the *lowest* total cost
+[p,q,C] = dp2(1-stfMag);
+
+% Calculate the frames in spec1F that are indicated to match each frame
+% in spec1M, so we can resynthesize a warped, aligned version
+female1 = zeros(1, size(freqs1M,2));
+for i = 1:length(female1); female1(i) = q(find(p >= i, 1 )); end
+% Phase-vocoder interpolate D2's STFT under the time warp
+femaleInterp = pvsample(xFormed, female1-1, 128);
+% Invert it back to time domain
+% femaleWarp = istft(femaleInterp, 512, 512, 128)';
+femaleWarp = istft(femaleInterp, 512, 512, 128)';
+% femaleWarp = padarray(femaleWarp,length(signal1M)-length(femaleWarp),'post');
+
+soundsc(femaleWarp,fs);
+
+
+
 
 %% FURKKKK
 % 
