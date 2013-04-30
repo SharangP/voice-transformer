@@ -15,13 +15,9 @@ FAsoundFiles = dir(strcat(TSPpath, 'FA/*.wav'));
 sig1M = Signal(strcat(TSPpath,'MA/', MAsoundFiles(1).name));
 sig1F = Signal(strcat(TSPpath,'FA/', FAsoundFiles(1).name));
 
-nFFT = 512;
+nFFT = 128;
 % overlap = 128
 winTime = 0.01;
-window = 128;
-overlap = 64;
-
-% nFFT >= window
 
 sig1M.nfft = nFFT;
 sig1F.nfft= nFFT;
@@ -29,8 +25,8 @@ sig1M.STFT;
 sig1F.STFT;
 
 
-freqs1M = abs(spectrogram(signal1M,window,overlap,nFFT,fs));
-freqs1F = abs(spectrogram(signal1F,window,overlap,nFFT,fs));
+freqs1M = abs(spectrogram(signal1M,winTime*fs,winTime*fs/2,nFFT,fs));
+freqs1F = abs(spectrogram(signal1F,winTime*fs,winTime*fs/2,nFFT,fs));
 % freqs1M = abs(sig1M.S);
 % freqs1F = abs(sig1F.S);
 
@@ -75,7 +71,7 @@ for n = 1:size(freqs1F,1)
     end
 end
 
-xFormed = ispectrogram(freqsTransformed,window,overlap); 
+xFormed = ispectrogram(freqsTransformed,winTime*fs,winTime*fs/2); 
 % xFormSig = sig1F;
 % % xFormSig.s = [];
 % xFormSig.S = freqsTransformed;
