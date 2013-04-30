@@ -12,21 +12,20 @@ FAsoundFiles = dir(strcat(TSPpath, 'FA/*.wav'));
 [signal1M, fs] = wavread(strcat(TSPpath,'MA/', MAsoundFiles(1).name));
 [signal1F, ~] = wavread(strcat(TSPpath,'FA/', FAsoundFiles(1).name));
 
-sig1M = Signal(strcat(TSPpath,'MA/', MAsoundFiles(1).name));
-sig1F = Signal(strcat(TSPpath,'FA/', FAsoundFiles(1).name));
+% sig1M = Signal(strcat(TSPpath,'MA/', MAsoundFiles(1).name));
+% sig1F = Signal(strcat(TSPpath,'FA/', FAsoundFiles(1).name));
 
 nFFT = 512;
-% overlap = 128
 winTime = 0.01;
 window = 128;
 overlap = 64;
 
 % nFFT >= window
 
-sig1M.nfft = nFFT;
-sig1F.nfft= nFFT;
-sig1M.STFT;
-sig1F.STFT;
+% sig1M.nfft = nFFT;
+% sig1F.nfft= nFFT;
+% sig1M.STFT;
+% sig1F.STFT;
 
 
 freqs1M = abs(spectrogram(signal1M,window,overlap,nFFT,fs));
@@ -55,6 +54,7 @@ end
 %% Apply the Transformation Function
 
 freqsTransformed = zeros(size(freqs1F));
+freqsTransformed2 = zeros(size(freqs1M));
 
 for n = 1:size(freqs1F,1) 
     n
@@ -73,9 +73,15 @@ for n = 1:size(freqs1F,1)
         h = gmmSource{n}.posterior(freqs1F(n,m))';
         freqsTransformed(n,m) = sum(h.*(muY + sigmaXY.*(sigmaX.^-1).*(freqs1F(n,m) - muX)));
     end
+    
+    for m = 1:size(freqs1M,2)
+        h = gmmTarget{n}.posterior(freqs1M(n,m))';
+        freqsTransformed2(n,m) = sum(h.*(muY + sigmaY.*(sigmaY.^-1).*(freqs1M(n,m) - muY)));
+    end
 end
 
 xFormed = ispectrogram(freqsTransformed,window,overlap); 
+xFormed2 = ispectrogram(freqsTransformed2,window,overlap);
 % xFormSig = sig1F;
 % % xFormSig.s = [];
 % xFormSig.S = freqsTransformed;
@@ -90,7 +96,7 @@ xFormed = ispectrogram(freqsTransformed,window,overlap);
 %
 
 
-spec1M = spectrogram(signal1M,512,384,512,fs);
+% spec1M = spectrogram(signal1M,512,384,512,fs);
 % spec1F = spectrogram(signal1F,512,384,512,fs);
 
 %% Dynamic Time warping
