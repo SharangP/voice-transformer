@@ -24,7 +24,7 @@ sig1M.STFT;
 sig1F.STFT;
 
 
-freqs1M = abs(spectrogram(signal1M,winTime*fs,winTime*fs/2,nFFT,fs));
+% freqs1M = abs(spectrogram(signal1M,winTime*fs,winTime*fs/2,nFFT,fs));
 % freqs1F = abs(spectrogram(signal1F,winTime*fs,winTime*fs/2,nFFT,fs));
 freqs1M = abs(sig1M.S);
 freqs1F = abs(sig1F.S);
