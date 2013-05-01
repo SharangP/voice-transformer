@@ -12,26 +12,37 @@ FAsoundFiles = dir(strcat(TSPpath, 'FA/*.wav'));
 [signal1M, fs] = wavread(strcat(TSPpath,'MA/', MAsoundFiles(1).name));
 [signal1F, ~] = wavread(strcat(TSPpath,'FA/', FAsoundFiles(1).name));
 
+signal1M = signal1M(1:ceil(length(signal1M)/4));
+signal1F = signal1F(1:ceil(length(signal1F)/4));
 
 sig1M = Signal(strcat(TSPpath,'MA/', MAsoundFiles(1).name));
 sig1F = Signal(strcat(TSPpath,'FA/', FAsoundFiles(1).name));
+sig1M.s = sig1M.s(1:ceil(length(sig1M.s)/4));
+sig1F.s = sig1F.s(1:ceil(length(sig1F.s)/4));
 
+sig1Xform =  Signal(strcat(TSPpath,'FA/', FAsoundFiles(1).name));
 
 
 % nFFT >= window
 nFFT = 512;
-winTime = 0.01;
+% winTime = 0.01;
 window = 128;
 overlap = 64;
 
 % Time warping female signal
-sig1M.nfft = nFFT;
+sig1M.nfft =nFFT;
 sig1F.nfft= nFFT;
 sig1M.STFT;
 sig1F.STFT;
 warpedSTFT = timeWarp(sig1M.S,sig1F.S,sig1F.windowLength,sig1F.overlapRatio*sig1F.windowLength,sig1F.nfft);sig1F.S = warpedSTFT;
 sig1M.S = warpedSTFT;
 signal1FWarp = sig1M.iSTFT();
+
+sig1M.s = signal1M;
+sig1F.s = signal1FWarp;
+
+sig1M.STFT;
+sig1F.STFT;
 
 % Spectrogram stuff for changing freqs
 freqs1M = abs(spectrogram(signal1M,window,overlap,nFFT,fs));
@@ -48,14 +59,14 @@ gmmTarget = cell(size(freqs1M,1),1);
 gmmJoint = cell(size(freqs1M,1),1);
 
 for n = 1:size(freqs1F,1)
-    nCluster = 5;
+    nCluster = 2;
     gmmSource{n} = gmdistribution.fit(freqs1F(n,:)',nCluster);
     while (gmmSource{n}.Converged ~=  1) && (nCluster > 1)
         nCluster = nCluster - 1;
-        gmmSource{n} = gmdistribution.fit(freqs1F(n,:)',nCluster);
+        gmmSource{n} = gmdistribution.fit(freqs1F(n,:)',nCluster,'Regularize',1e-6);
     end
-    gmmTarget{n} = gmdistribution.fit(freqs1M(n,:)',nCluster);
-    gmmJoint{n} = gmdistribution.fit([freqs1F(n,:)';freqs1M(n,:)'],nCluster);
+    gmmTarget{n} = gmdistribution.fit(freqs1M(n,:)',nCluster,'Regularize',1e-6);
+    gmmJoint{n} = gmdistribution.fit([freqs1F(n,:)';freqs1M(n,:)'],nCluster,'Regularize',1e-6);
 end
 
 %% Apply the Transformation Function
@@ -88,14 +99,10 @@ for n = 1:size(freqs1F,1)
 end
 
 
-
+% sig1Xform.S = freqsTransformed;
+% xFormed = sig1Xform.iSTFT();
 xFormed = ispectrogram(freqsTransformed,window,overlap); 
 xFormed2 = ispectrogram(freqsTransformed2,window,overlap);
-% xFormSig = sig1F;
-% % xFormSig.s = [];
-% xFormSig.S = freqsTransformed;
-% xFormed = xFormSig.iSTFT();
-
 
 % xFormed = istft(freqsTransformed, nFFT, winTime*fs,  winTime*fs/2)';
 % xFormed = timeWarp(freqs1M, freqsTransformed, winTime*fs, winTime*fs/2, nFFT);
