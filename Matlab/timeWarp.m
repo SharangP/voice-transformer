@@ -1,4 +1,4 @@
-function [ warpedSig ] = timeWarp( target, source, window, overlap, nfft )
+function [warpedStft ] = timeWarp( target, source, window, overlap, nfft )
 %TIMEWARP Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -17,9 +17,9 @@ warping = zeros(1, size(target,2));
 for i = 1:length(warping); warping(i) = q(find(p >= i, 1 )); end
 
 % Phase-vocoder interpolate D2's STFT under the time warp
-warpedIterp = pvsample(source, warping-1, overlap);
+warpedStft = pvsample(source, warping-1, window-overlap);
 % Invert it back to time domain
-warpedSig = istft(warpedIterp, nfft, window, overlap)';
+% warpedSig = istft(warpedStft, nfft, window, window-overlap)';
 
 
 end
